@@ -1,9 +1,9 @@
 <?php
 
 $servername = "localhost";
-$username = "dev_admin";
-$password = "xyjPfqo%rDsJ^KJN";
-$database = "dev_test";
+$username = "rion_admin";
+$password = "t5Bpcg^3qLBC2E#9";
+$database = "rion_rionotes";
 
 $conn = mysqli_connect($servername, $username, $password, $database);
 

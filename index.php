@@ -1,7 +1,7 @@
 <?php
 session_start();
 
-require_once 'config.php';
+include 'config.php';
 
 $request_uri = trim($_SERVER['REQUEST_URI'], '/');
 $parts = explode('/', $request_uri);
@@ -18,8 +18,12 @@ $row = mysqli_fetch_assoc($result);
 if ($row && !empty($row['passwords'])) {
     if (!isset($_COOKIE['authenticated']) || $_COOKIE['authenticated'] !== $identifier) {
         $_SESSION['identifier'] = $identifier;
-        header("Location: https://dev.canbds.com/notepad/login.php/$identifier");
+        header("Location: http://rionotes.com/login.php/$identifier");
         exit();
+    } else {
+        // Update cookie to extend its expiration
+        setcookie("authenticated", $identifier, time() + (86400 * 30), "/"); // 86400 = 1 day, so this sets the cookie for 30 days
+
     }
 }
 
@@ -34,20 +38,29 @@ mysqli_close($conn);
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Notepad</title>
+    <title>Rio Notes</title>
+    <meta name="description" content="A simple and efficient online notepad application.">
+    <meta name="keywords" content="rionotes, online notes, note-taking">
+    <meta name="author" content="Jet-Tan">
+
+
     <link rel="shortcut icon" type="image/x-icon" href="logo.png" />
     <link rel="stylesheet" type="text/css" href="styles.css">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.15.4/css/all.css">
+
     <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.min.js"></script>
+
     <style>
         body {
             background-color: #f4f4f4;
             font-family: Arial, sans-serif;
             margin: 0;
             padding: 0;
+            display: flex;
+            flex-direction: column;
         }
 
         .container {
@@ -68,8 +81,8 @@ mysqli_close($conn);
         .new-note,
         .share-url {
             display: inline-block;
-            margin-bottom: 20px;
-            padding: 10px 20px;
+            margin-bottom: 10px;
+            padding: 0 15px;
             background-color: #007bff;
             color: #fff;
             text-decoration: none;
@@ -94,8 +107,8 @@ mysqli_close($conn);
             border: 1px solid #ddd;
             font-size: 15px;
             font-family: Arial, Helvetica, sans-serif;
-            resize: none;
-            height: 500px;
+            /* resize: both; */
+            height: 60vh;
         }
 
         textarea:focus {
@@ -107,7 +120,7 @@ mysqli_close($conn);
         .add-password {
             display: inline-block;
             margin-top: 20px;
-            padding: 10px 20px;
+            padding: 0 15px;
             background-color: #ffc107;
             color: #fff;
             text-decoration: none;
@@ -140,7 +153,6 @@ mysqli_close($conn);
             .container {
                 padding: 10px;
                 margin: 20px auto;
-                height: auto;
             }
 
             .new-note,
@@ -163,12 +175,15 @@ mysqli_close($conn);
             z-index: 1;
         }
     </style>
+
     <script>
         document.addEventListener("DOMContentLoaded", function() {
+            // Function to generate a random identifier
             function generateRandomIdentifier() {
                 return Math.random().toString(36).substring(2, 10);
             }
 
+            // Function to update the identifier in the database and UI
             function updateIdentifier(currentIdentifier, newIdentifier) {
                 fetch('connect.php', {
                         method: 'POST',
@@ -186,8 +201,8 @@ mysqli_close($conn);
                         console.log('Server Response:', data);
                         if (data.success) {
                             var updatedIdentifier = newIdentifier || currentIdentifier;
-                            document.getElementById("edit-url").textContent = window.location.origin + '/notepad/' + updatedIdentifier;
-                            history.pushState({}, '', window.location.origin + '/notepad/' + updatedIdentifier);
+                            document.getElementById("edit-url").textContent = window.location.origin + '/' + updatedIdentifier;
+                            history.pushState({}, '', window.location.origin + '/' + updatedIdentifier);
                             currentIdentifier = updatedIdentifier;
                             window.location.reload();
                             showStatusIcon(true);
@@ -205,15 +220,17 @@ mysqli_close($conn);
                     });
             }
 
+            // Function to show status icon indicating success or failure
             function showStatusIcon(success) {
                 var iconElement = document.getElementById('status-icon');
                 if (success) {
                     iconElement.innerHTML = '<i class="fas fa-check-circle success-icon"></i>';
                 } else {
-                    iconElement.innerHTML = '<i class="fas fa-times-circle failure-icon" hidden></i>';
+                    iconElement.innerHTML = '<i class="fas fa-times-circle failure-icon"> Please note content!</i>';
                 }
             }
 
+            // Function to load content from the database
             function loadContent(identifier) {
                 fetch('connect.php', {
                         method: 'POST',
@@ -243,12 +260,13 @@ mysqli_close($conn);
             var currentIdentifier = window.location.pathname.split('/').pop();
             if (!currentIdentifier || currentIdentifier.length === 0) {
                 currentIdentifier = initialIdentifier;
-                window.history.replaceState({}, '', window.location.origin + '/notepad/' + initialIdentifier);
+                window.history.replaceState({}, '', window.location.origin + '/' + initialIdentifier);
             }
-            document.getElementById("edit-url").textContent = window.location.origin + '/notepad/' + currentIdentifier;
+            document.getElementById("edit-url").textContent = window.location.origin + '/' + currentIdentifier;
 
             loadContent(currentIdentifier);
 
+            // Event listener for blur event on textarea
             var textarea = document.getElementById('contents');
             textarea.addEventListener('blur', function() {
                 var content = textarea.value.trim();
@@ -279,6 +297,7 @@ mysqli_close($conn);
                     });
             });
 
+            // Event listener for form submission to update identifier
             document.getElementById('update-identifier-form').addEventListener('submit', function(event) {
                 event.preventDefault();
                 var newIdentifier = document.getElementById('new-identifier-input').value.trim();
@@ -289,11 +308,13 @@ mysqli_close($conn);
                 }
             });
 
+            // Toggle popover for changing URL
             document.querySelector('.change-url').addEventListener('click', function() {
                 var popover = document.getElementById('popover-content');
                 popover.style.display = (popover.style.display === 'block' ? 'none' : 'block');
             });
 
+            // Event listener for adding or removing password
             document.querySelector('.add-password').addEventListener('click', function() {
                 if (this.textContent === 'Add password') {
                     var newPassword = prompt('Enter password:');
@@ -357,6 +378,7 @@ mysqli_close($conn);
                 }
             });
 
+            // Function to check if password is set
             function checkPasswordStatus(identifier) {
                 fetch('connect.php', {
                         method: 'POST',
@@ -387,9 +409,9 @@ mysqli_close($conn);
             }
 
             checkPasswordStatus(currentIdentifier);
-
         });
     </script>
+
     <script>
         $(document).ready(function() {
             var editUrl = $('#edit-url').text();
@@ -406,6 +428,7 @@ mysqli_close($conn);
             });
         });
     </script>
+
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             var popover = document.getElementById('popover-content');
@@ -423,14 +446,16 @@ mysqli_close($conn);
             });
         });
     </script>
+
 </head>
+
 
 <body>
     <div class="container">
-        <h3>NOTEPAD ONLINE</h3>
+        <h3>RIONOTES</h3>
         <div class="content">
             <div>
-                <a href="https://dev.canbds.com/notepad/" target="_blank" class="new-note btn btn-primary">New note</a>
+                <a href="http://rionotes.com/" target="_blank" class="new-note btn btn-primary">New note</a>
                 <button class="share-url btn btn-primary ms-2" id="share-url" data-bs-toggle="tooltip" data-bs-placement="top" title="Copy">Copy url</button>
                 <div hidden>
                     <strong>Edit url:</strong>
@@ -458,6 +483,11 @@ mysqli_close($conn);
                 <?php endif; ?>
             </div>
         </div>
+    </div>
+
 </body>
+<footer class="footer-container">
+
+</footer>
 
 </html>

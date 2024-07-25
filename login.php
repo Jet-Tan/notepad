@@ -1,7 +1,7 @@
 <?php
 session_start();
 
-require_once "config.php";
+include "config.php";
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $identifier = $_SESSION['identifier'];
@@ -14,7 +14,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
     if ($row && md5($password_input) == $row['passwords']) { // Using md5() for password comparison
         setcookie('authenticated', $identifier, time() + (86400 * 30), "/");
-        header("Location: https://dev.canbds.com/notepad/$identifier");
+        header("Location: https://rionotes.com/$identifier");
         exit();
     } else {
         $error = "Incorrect password. Please try again.";

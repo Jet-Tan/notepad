@@ -1,6 +1,6 @@
 <?php
 session_start();
-require_once 'config.php';
+include 'config.php';
 header('Content-Type: application/json');
 $postData = file_get_contents('php://input');
 $data = json_decode($postData, true);
